@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rıfkı AI v5 - Kağan Edition</title>
+    <style>
+        :root { --bg-side: #1a1a1a; --bg-chat: #242424; --text: #ffffff; --accent: #4aa3ff; }
+        .light { --bg-side: #f0f0f0; --bg-chat: #ffffff; --text: #1a1a1a; --accent: #007bff; }
+        
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; background: var(--bg-chat); color: var(--text); overflow: hidden; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; }
+        .btn-new { border: 1px solid #444; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: bold; }
+        .history { flex: 1; overflow-y: auto; font-size: 14px; opacity: 0.7; }
+        .footer { border-top: 1px solid #333; padding-top: 10px; }
+        .f-item { padding: 10px; cursor: pointer; border-radius: 5px; }
+        .f-item:hover { background: #333; }
+
+        /* MAIN */
+        .main { flex: 1; display: flex; flex-direction: column; position: relative; }
+        #chat { flex: 1; overflow-y: auto; padding: 20px 10% 100px 10%; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 14px; border-radius: 12px; max-width: 80%; line-height: 1.5; }
+        .user { align-self: flex-end; background: #3a3a3a; }
+        .bot { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid #333; }
+
+        /* INPUT */
+        .input-area { position: absolute; bottom: 30px; left: 10%; right: 10%; background: #2f2f2f; border: 1px solid #444; border-radius: 15px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+        input[type="text"] { flex: 1; background: transparent; border: none; color: white; outline: none; font-size: 16px; }
+        .btn-send { background: var(--accent); border: none; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        /* MODALS */
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e1e1e; padding: 25px; border-radius: 15px; z-index: 101; width: 300px; border: 1px solid #444; color: white; }
+        .active { display: block !important; }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<div class="modal" id="m-set">
+    <h3>⚙️ Ayarlar</h3>
+    <p><b>Geliştirici:</b> Kağan</p>
+    <button onclick="document.body.classList.toggle('light')" style="width:100%; padding:10px; cursor:pointer;">Tema Değiştir</button>
+    <button onclick="closeAll()" style="width:100%; padding:10px; margin-top:10px;">Kapat</button>
+</div>
+
+<div class="modal" id="m-help">
+    <h3>❓ Yardım</h3>
+    <p>• Resimleri 📎 simgesiyle ekle.</p>
+    <p>• Sol taraftan yeni sohbet aç.</p>
+    <button onclick="closeAll()" style="width:100%; padding:10px; margin-top:10px;">Tamam</button>
+</div>
+
+<div class="sidebar">
+    <div class="btn-new" onclick="location.reload()">+ Yeni Sohbet</div>
+    <div class="history">Eski sohbetler yakında...</div>
+    <div class="footer">
+        <div class="f-item" onclick="openM('m-set')">⚙️ Ayarlar</div>
+        <div class="f-item" onclick="openM('m-help')">❓ Yardım</div>
+    </div>
+</div>
+
+<div class="main">
+    <div id="chat"></div>
+    <div class="input-area">
+        <label for="file-up" style="cursor:pointer; font-size:20px;">📎</label>
+        <input type="file" id="file-up" hidden onchange="handleFile(this)">
+        <input type="text" id="msg-in" placeholder="Rıfkı'ya sor Kağan..." onkeydown="if(event.key==='Enter') send()">
+        <button class="btn-send" onclick="send()">Gönder</button>
+    </div>
+</div>
+
+<script>
+    const _key = "QUl6YVN5RG10MTFQc1UtUWx1Q1R6ZXNhVjRKdEFoVW5sQ1QwbU5Z";
+    const API_KEY = atob(_key);
+    let history = [];
+    let fileData = null;
+
+    function openM(id) {
+        document.getElementById('overlay').classList.add('active');
+        document.getElementById(id).classList.add('active');
+    }
+
+    function closeAll() {
+        document.getElementById('overlay').classList.remove('active');
+        document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    }
+
+    function add(text, type) {
+        const div = document.createElement("div");
+        div.className = "msg " + type;
+        div.innerText = text;
+        document.getElementById("chat").appendChild(div);
+        document.getElementById("chat").scrollTop = document.getElementById("chat").scrollHeight;
+    }
+
+    async function handleFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            fileData = { mime_type: file.type, data: e.target.result.split(',')[1] };
+            add("📁 Dosya hazır: " + file.name, "user");
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function send() {
+        const inp = document.getElementById("msg-in");
+        const val = inp.value.trim();
+        if(!val && !fileData) return;
+
+        add(val || "Dosya analiz ediliyor...", "user");
+        inp.value = "";
+
+        // Mesaj yapısını kur
+        let parts = [{ text: val || "Bu dosyayı analiz et." }];
+        if (fileData) parts.push({ inline_data: fileData });
+        
+        history.push({ role: "user", parts: parts });
+
+        try {
+            // LİSTENDEN ALDIĞIMIZ MODEL: gemini-2.5-flash
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    systemInstruction: { parts: [{ text: "Sen Rıfkı AI'sın. Kağan seni kodladı. Karşındaki kişi Kağan." }] },
+                    contents: history
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                add("❌ Hata: " + data.error.message, "bot");
+            } else {
+                const reply = data.candidates[0].content.parts[0].text;
+                add(reply, "bot");
+                history.push({ role: "model", parts: [{ text: reply }] });
+            }
+        } catch (e) {
+            add("❌ Bağlantı hatası! Lütfen internetini kontrol et Kağan.", "bot");
+        }
+        fileData = null; // Dosyayı temizle
+    }
+
+    window.onload = () => add("Hazırım Kağan! Ne yapalım?", "bot");
+</script>
+
+</body>
+</html>
