@@ -2,152 +2,167 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Rıfkı AI v5 - Kağan Edition</title>
+    <title>Rıfkı AI</title>
     <style>
-        :root { --bg-side: #1a1a1a; --bg-chat: #242424; --text: #ffffff; --accent: #4aa3ff; }
-        .light { --bg-side: #f0f0f0; --bg-chat: #ffffff; --text: #1a1a1a; --accent: #007bff; }
-        
+        :root { --bg-side: #121212; --bg-chat: #1a1a1a; --text: #e0e0e0; --border: #333; --accent: #ffffff; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; background: var(--bg-chat); color: var(--text); overflow: hidden; }
+
+        .sidebar { 
+            width: 260px; background: var(--bg-side); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; padding: 20px; 
+        }
+        .btn-new { 
+            border: 1px solid var(--border); padding: 12px; border-radius: 8px; 
+            text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: bold; 
+            background: var(--bg-chat); transition: 0.2s;
+        }
+        .btn-new:hover { background: #252525; }
         
-        /* SIDEBAR */
-        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; }
-        .btn-new { border: 1px solid #444; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: bold; }
-        .history { flex: 1; overflow-y: auto; font-size: 14px; opacity: 0.7; }
-        .footer { border-top: 1px solid #333; padding-top: 10px; }
-        .f-item { padding: 10px; cursor: pointer; border-radius: 5px; }
-        .f-item:hover { background: #333; }
+        .history { flex: 1; overflow-y: auto; }
+        .history-item { 
+            padding: 10px; cursor: pointer; border-radius: 6px; margin-bottom: 5px; 
+            font-size: 14px; border-bottom: 1px solid var(--border); 
+            text-overflow: ellipsis; white-space: nowrap; overflow: hidden; opacity: 0.8;
+        }
+        .history-item:hover { background: var(--border); opacity: 1; }
+        .sidebar-footer { padding-top: 15px; font-size: 11px; opacity: 0.5; text-align: center; border-top: 1px solid var(--border); }
 
-        /* MAIN */
         .main { flex: 1; display: flex; flex-direction: column; position: relative; }
-        #chat { flex: 1; overflow-y: auto; padding: 20px 10% 100px 10%; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 14px; border-radius: 12px; max-width: 80%; line-height: 1.5; }
-        .user { align-self: flex-end; background: #3a3a3a; }
-        .bot { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid #333; }
+        #chat { 
+            flex: 1; overflow-y: auto; padding: 40px 15% 120px 15%; 
+            display: flex; flex-direction: column; gap: 20px; 
+        }
 
-        /* INPUT */
-        .input-area { position: absolute; bottom: 30px; left: 10%; right: 10%; background: #2f2f2f; border: 1px solid #444; border-radius: 15px; padding: 12px; display: flex; align-items: center; gap: 10px; }
-        input[type="text"] { flex: 1; background: transparent; border: none; color: white; outline: none; font-size: 16px; }
-        .btn-send { background: var(--accent); border: none; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .msg { padding: 16px; border-radius: 12px; line-height: 1.6; max-width: 80%; border: 1px solid var(--border); font-size: 16px; }
+        .user { align-self: flex-end; background: #333; }
+        .bot { align-self: flex-start; background: #111; border-left: 4px solid #fff; }
 
-        /* MODALS */
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e1e1e; padding: 25px; border-radius: 15px; z-index: 101; width: 300px; border: 1px solid #444; color: white; }
-        .active { display: block !important; }
+        .input-container {
+            position: absolute; bottom: 30px; left: 15%; right: 15%;
+            background: #222; border: 1px solid var(--border); border-radius: 15px; 
+            padding: 10px 15px; display: flex; gap: 15px; align-items: center;
+        }
+        #msg-in { 
+            flex: 1; background: transparent; border: none; color: #fff; 
+            outline: none; font-size: 16px; padding: 5px;
+        }
+        .send-btn { 
+            background: #fff; color: #000; border: none; padding: 10px 25px; 
+            border-radius: 10px; cursor: pointer; font-weight: bold; 
+        }
     </style>
 </head>
 <body>
 
-<div class="overlay" id="overlay" onclick="closeAll()"></div>
-
-<div class="modal" id="m-set">
-    <h3>⚙️ Ayarlar</h3>
-    <p><b>Geliştirici:</b> Kağan</p>
-    <button onclick="document.body.classList.toggle('light')" style="width:100%; padding:10px; cursor:pointer;">Tema Değiştir</button>
-    <button onclick="closeAll()" style="width:100%; padding:10px; margin-top:10px;">Kapat</button>
-</div>
-
-<div class="modal" id="m-help">
-    <h3>❓ Yardım</h3>
-    <p>• Resimleri 📎 simgesiyle ekle.</p>
-    <p>• Sol taraftan yeni sohbet aç.</p>
-    <button onclick="closeAll()" style="width:100%; padding:10px; margin-top:10px;">Tamam</button>
-</div>
-
-<div class="sidebar">
-    <div class="btn-new" onclick="location.reload()">+ Yeni Sohbet</div>
-    <div class="history">Eski sohbetler yakında...</div>
-    <div class="footer">
-        <div class="f-item" onclick="openM('m-set')">⚙️ Ayarlar</div>
-        <div class="f-item" onclick="openM('m-help')">❓ Yardım</div>
+    <div class="sidebar">
+        <div style="font-size: 20px; font-weight: bold; margin-bottom: 20px; letter-spacing: 1px;">RIFKI AI</div>
+        <div class="btn-new" onclick="newChat()">+ Yeni Sohbet</div>
+        <div class="history" id="h-list"></div>
+        <div class="sidebar-footer">
+            Rıfkı AI hata yapabilir. Kontrol ediniz.
+        </div>
     </div>
-</div>
 
-<div class="main">
-    <div id="chat"></div>
-    <div class="input-area">
-        <label for="file-up" style="cursor:pointer; font-size:20px;">📎</label>
-        <input type="file" id="file-up" hidden onchange="handleFile(this)">
-        <input type="text" id="msg-in" placeholder="Rıfkı'ya sor Kağan..." onkeydown="if(event.key==='Enter') send()">
-        <button class="btn-send" onclick="send()">Gönder</button>
+    <div class="main">
+        <div id="chat"></div>
+        <div class="input-container">
+            <input type="text" id="msg-in" placeholder="Bir şeyler yazın..." onkeydown="if(event.key==='Enter') send()">
+            <button class="send-btn" onclick="send()">Gönder</button>
+        </div>
     </div>
-</div>
 
 <script>
-    const _key = "QUl6YVN5RG10MTFQc1UtUWx1Q1R6ZXNhVjRKdEFoVW5sQ1QwbU5Z";
-    const API_KEY = atob(_key);
-    let history = [];
-    let fileData = null;
+    const _k = "QUl6YVN5RG10MTFQc1UtUWx1Q1R6ZXNhVjRKdEFoVW5sQ1QwbU5Z";
+    const API_KEY = atob(_k);
+    let chatHistory = [];
+    let savedChats = JSON.parse(localStorage.getItem("rifki_pc_chats") || "[]");
 
-    function openM(id) {
-        document.getElementById('overlay').classList.add('active');
-        document.getElementById(id).classList.add('active');
+    window.onload = () => {
+        renderHistory();
+        addMessage("Merhaba, ben Rıfkı AI. Size nasıl yardımcı olabilirim?", "bot");
+    };
+
+    function renderHistory() {
+        const list = document.getElementById("h-list");
+        list.innerHTML = "";
+        savedChats.forEach((chat, index) => {
+            const item = document.createElement("div");
+            item.className = "history-item";
+            item.innerText = chat.title || "Sohbet " + (index + 1);
+            item.onclick = () => loadChat(index);
+            list.appendChild(item);
+        });
     }
 
-    function closeAll() {
-        document.getElementById('overlay').classList.remove('active');
-        document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    function newChat() {
+        if (chatHistory.length > 0) {
+            const title = chatHistory[0].parts[0].text.substring(0, 25);
+            savedChats.unshift({ title: title, history: chatHistory });
+            localStorage.setItem("rifki_pc_chats", JSON.stringify(savedChats));
+        }
+        chatHistory = [];
+        document.getElementById("chat").innerHTML = "";
+        addMessage("Yeni bir sohbet başladı.", "bot");
+        renderHistory();
     }
 
-    function add(text, type) {
+    function loadChat(index) {
+        chatHistory = savedChats[index].history;
+        document.getElementById("chat").innerHTML = "";
+        chatHistory.forEach(msg => addMessage(msg.parts[0].text, msg.role === "user" ? "user" : "bot"));
+    }
+
+    function addMessage(text, type) {
         const div = document.createElement("div");
         div.className = "msg " + type;
         div.innerText = text;
-        document.getElementById("chat").appendChild(div);
-        document.getElementById("chat").scrollTop = document.getElementById("chat").scrollHeight;
-    }
-
-    async function handleFile(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            fileData = { mime_type: file.type, data: e.target.result.split(',')[1] };
-            add("📁 Dosya hazır: " + file.name, "user");
-        };
-        reader.readAsDataURL(file);
+        const chat = document.getElementById("chat");
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
     }
 
     async function send() {
         const inp = document.getElementById("msg-in");
         const val = inp.value.trim();
-        if(!val && !fileData) return;
+        if(!val) return;
 
-        add(val || "Dosya analiz ediliyor...", "user");
+        addMessage(val, "user");
         inp.value = "";
-
-        // Mesaj yapısını kur
-        let parts = [{ text: val || "Bu dosyayı analiz et." }];
-        if (fileData) parts.push({ inline_data: fileData });
-        
-        history.push({ role: "user", parts: parts });
+        chatHistory.push({ role: "user", parts: [{ text: val }] });
 
         try {
-            // LİSTENDEN ALDIĞIMIZ MODEL: gemini-2.5-flash
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+            // Modeli senin istediğin gibi bırakıyorum (2.5-flash)
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    systemInstruction: { parts: [{ text: "Sen Rıfkı AI'sın. Kağan seni kodladı. Karşındaki kişi Kağan." }] },
-                    contents: history
+                    systemInstruction: { 
+                        parts: [{ text: "Sen Rıfkı AI'sın. Seni Kağan kodladı. 'Seni kim yaptı?' sorusuna 'Beni Kağan yaptı' de. Karşındakinin ismini öğrenince unutma. Sorulmadan 'Sen Kağan'sın' deme." }] 
+                    },
+                    contents: chatHistory
                 })
             });
 
-            const data = await response.json();
+            const data = await res.json();
 
-            if (data.error) {
-                add("❌ Hata: " + data.error.message, "bot");
-            } else {
+            // Veri yapısı kontrolü
+            if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
                 const reply = data.candidates[0].content.parts[0].text;
-                add(reply, "bot");
-                history.push({ role: "model", parts: [{ text: reply }] });
+                addMessage(reply, "bot");
+                chatHistory.push({ role: "model", parts: [{ text: reply }] });
+            } else if (data.error) {
+                // Eğer API bir hata mesajı döndürürse ekrana yazdır
+                addMessage("API Hatası: " + data.error.message, "bot");
+                console.log("Detaylı Hata:", data.error);
+            } else {
+                addMessage("Yanıt formatı uyuşmadı, bağlantıyı kontrol edin.", "bot");
             }
-        } catch (e) {
-            add("❌ Bağlantı hatası! Lütfen internetini kontrol et Kağan.", "bot");
-        }
-        fileData = null; // Dosyayı temizle
-    }
 
-    window.onload = () => add("Hazırım Kağan! Ne yapalım?", "bot");
+        } catch(e) {
+            addMessage("Bağlantı kurulamadı. Lütfen internetini kontrol et.", "bot");
+            console.error("Fetch Hatası:", e);
+        }
+    }
 </script>
 
 </body>
